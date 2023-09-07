@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">AndroidLabs</string>
+    <string name="textStartValue">First button clicks = 0\nSecond button clicks = 0</string>
+    <string name="buttonText">Нажми!</string>
 </resources>
