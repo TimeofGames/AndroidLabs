@@ -1,32 +1,36 @@
 package com.example.androidlabs
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
+import java.io.Console
 
 class HelloActivity : Activity(){
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_helloact)
-        var button1Clicks = 0
-        var button2Clicks = 0
-        val button1 = findViewById<Button>(R.id.button1)
-        val button2 = findViewById<Button>(R.id.button2)
-        val text = findViewById<TextView>(R.id.text)
+        val loginButton = findViewById<Button>(R.id.loginButton)
+        val email = findViewById<EditText>(R.id.editTextTextEmailAddress)
+        val password = findViewById<EditText>(R.id.editTextTextPassword)
+        val errorText = findViewById<TextView>(R.id.errorText)
 
-        fun changeText(){
-            text.text = "First button clicks = $button1Clicks \nSecond button clicks = $button2Clicks"
+
+        loginButton.setOnClickListener{
+            val rightEmail = "a@gmail.com"
+            val rightPassword = "1"
+
+            if(email.text.toString().equals(rightEmail) && password.text.toString().equals(rightPassword)){
+                val secondActivity = Intent(this@HelloActivity, SecondActivity::class.java)
+                startActivity(secondActivity)
+            }
+            else{
+                errorText.text = "Wrong email or password"
+            }
         }
 
-        button1.setOnClickListener {
-            button1Clicks+=1
-            changeText()
-        }
-        button2.setOnClickListener {
-            button2Clicks+=1
-            changeText()
-        }
     }
 
 
