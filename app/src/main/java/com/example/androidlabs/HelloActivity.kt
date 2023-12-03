@@ -1,7 +1,10 @@
 package com.example.androidlabs
 
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -11,6 +14,7 @@ import android.widget.TextView
 class HelloActivity : Activity(){
     private val TAG = this.javaClass.simpleName
 
+    @SuppressLint("CommitPrefEdits")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.i(TAG, Const.LifeCycle.ON_CREATE)
@@ -19,7 +23,6 @@ class HelloActivity : Activity(){
         val email = findViewById<EditText>(R.id.editTextTextEmailAddress)
         val password = findViewById<EditText>(R.id.editTextTextPassword)
         val errorText = findViewById<TextView>(R.id.errorText)
-
 
         loginButton.setOnClickListener{
             Log.i(TAG, Const.HelloActivityMethods.ON_LOGIN_BUTTON_PRESSED)

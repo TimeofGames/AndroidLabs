@@ -17,5 +17,6 @@ public class Const {
     }
     public static final class Extra{
         public static final String SOME_INFO = "someInfo";
+        public static final String LIST_DATA = "listData";
     }
 }

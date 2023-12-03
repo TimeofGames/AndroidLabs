@@ -1,54 +1,70 @@
 package com.example.androidlabs
 
+import ListElement
+import ListElementAdapter
 import android.app.Activity
+import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.widget.AdapterView.OnItemClickListener
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ListView
 import android.widget.Toast
+import androidx.core.view.size
 
 
 class SecondActivity : Activity() {
     private val TAG = this.javaClass.simpleName
+
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.i(TAG, Const.LifeCycle.ON_CREATE)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.second_activity)
-        var selectedUsers = ArrayList<String>()
         val textListView = findViewById<ListView>(R.id.list)
-        val myStringArray = ArrayList<String>()
-        val textListAdapter: ArrayAdapter<String> =
-            ArrayAdapter(this, android.R.layout.simple_list_item_1, myStringArray)
-        textListView.adapter = textListAdapter
         val addButton = findViewById<Button>(R.id.addButton)
         val delButton = findViewById<Button>(R.id.deleteButton)
         val textToList = findViewById<EditText>(R.id.textToList)
+        val myStringArray = ArrayList<ListElement>()
+        val textListAdapter: ListElementAdapter<String> =
+            ListElementAdapter(myStringArray, this)
+        val sharedPref: SharedPreferences = getPreferences(Context.MODE_PRIVATE)
+        var number = 0
+        var restoredData = sharedPref.getString(Const.Extra.LIST_DATA + number, "")
+        val editor: SharedPreferences.Editor = sharedPref.edit()
+        editor.remove(Const.Extra.LIST_DATA + number)
+        while (restoredData != "") {
+            textListAdapter.add(ListElement(restoredData,false))
+            number++
+            restoredData = sharedPref.getString(Const.Extra.LIST_DATA + number, "")
+            editor.remove(Const.Extra.LIST_DATA + number).apply()
+        }
+        textListView.adapter = textListAdapter
+
         addButton.setOnClickListener {
             if (!textToList.text.isNullOrEmpty()) {
-                textListAdapter.add(textToList.text.toString())
+                textListAdapter.add(ListElement(textToList.text.toString(),false))
                 textToList.text.clear()
             }
         }
         delButton.setOnClickListener {
-            selectedUsers.forEach(textListAdapter::remove)
-            selectedUsers.clear()
-        }
-        textListView.onItemClickListener =
-            OnItemClickListener { parent, v, position, id ->
-                val user = textListAdapter.getItem(position)
-                if (textListView.isItemChecked(position)) user?.let { selectedUsers.add(it) }
-                else selectedUsers.remove(user)
-                textListView.setItemChecked(position, false)
+            var itemsToDel = ArrayList<ListElement>()
+            for(i in 0..textListAdapter.count-1){
+               if(textListAdapter.getItem(i).checked){
+                   itemsToDel.add(textListAdapter.getItem(i))
+               }
             }
-        Toast.makeText(this@SecondActivity,
-            intent.getStringExtra(Const.Extra.SOME_INFO), Toast.LENGTH_SHORT).show()
-
+            itemsToDel.forEach(textListAdapter::remove)
+        }
+        Toast.makeText(
+            this@SecondActivity,
+            intent.getStringExtra(Const.Extra.SOME_INFO), Toast.LENGTH_SHORT
+        ).show()
 
 
     }
+
     override fun onStart() {
         Log.i(TAG, Const.LifeCycle.ON_START)
         super.onStart()
@@ -66,6 +82,16 @@ class SecondActivity : Activity() {
 
     override fun onStop() {
         Log.i(TAG, Const.LifeCycle.ON_STOP)
+        val textListView = findViewById<ListView>(R.id.list)
+        val sharedPref: SharedPreferences = getPreferences(Context.MODE_PRIVATE)
+        val editor: SharedPreferences.Editor = sharedPref.edit()
+        if (textListView.size != 0){
+            for(i in 0..textListView.size-1){
+                editor.putString(Const.Extra.LIST_DATA + i,
+                    (textListView.adapter.getItem(i)as ListElement).name
+                ).apply()
+            }
+        }
         super.onStop()
     }
 

@@ -1,0 +1,1 @@
+class ListElement internal constructor(var name: String?, var checked: Boolean)
