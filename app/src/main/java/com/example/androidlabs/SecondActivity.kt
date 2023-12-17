@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlin.concurrent.thread
 
 
 class SecondActivity : Activity() {
@@ -40,29 +41,34 @@ class SecondActivity : Activity() {
         btnLoad = findViewById(R.id.showAllButton)
 
         btnSave.setOnClickListener {
-            if(isUpdate){
-                val login = login.text.toString()
-                val pass = password.text.toString()
-                val user = User(login = login, pass = pass)
-                db.updateUser(user, oldUser)
-                isUpdate = false
-                this.login.isEnabled = true
+            thread {
+                if(isUpdate){
+                    val login = login.text.toString()
+                    val pass = password.text.toString()
+                    val user = User(login = login, pass = pass)
+                    db.updateUser(user, oldUser)
+                    isUpdate = false
+                    this.login.isEnabled = true
+                }
+                else {
+                    val login = login.text.toString()
+                    val pass = password.text.toString()
+                    val user = User(login = login, pass = pass)
+                    db.addUser(user)
+                }
+                login.post{login.text.clear()}
+                password.post{password.text.clear()}
             }
-            else {
-            val login = login.text.toString()
-            val pass = password.text.toString()
-            val user = User(login = login, pass = pass)
-            db.addUser(user)
-            }
-            login.text.clear()
-            password.text.clear()
         }
 
         btnLoad.setOnClickListener {
-            val users = db.getAllUsers()
-            val usersLog = users.joinToString(separator = ",\n")
-            Log.d(TAG, "Users:\n $usersLog")
-            userAdapter.setData(users)
+            thread {
+                val users = db.getAllUsers()
+                Thread.sleep(10000)
+                val usersLog = users.joinToString(separator = ",\n")
+                Log.d(TAG, "Users:\n $usersLog")
+                rvUsers.post{userAdapter.setData(users)}
+            }
         }
         userAdapter.setListener(object: UserClickListener {
             override fun onItemClick(user: User) {
@@ -70,7 +76,7 @@ class SecondActivity : Activity() {
             }
 
             override fun onMenuDeleteClick(user: User) {
-                db.deleteUser(user)
+                thread {db.deleteUser(user)}
                 Toast.makeText(this@SecondActivity, "onMenuDeleteClick() user=$user", Toast.LENGTH_SHORT).show()
             }
 
