@@ -1,9 +1,10 @@
 <resources>
     <string name="app_name">AndroidLabs</string>
-    <string name="textStartValue">First button clicks = 0\nSecond button clicks = 0</string>
-    <string name="buttonText">Нажми!</string>
     <string name="login">Login</string>
     <string name="email">Email</string>
     <string name="password">Password</string>
     <string name="title_activity_second">SecondActivity</string>
+    <string name="create_account">Create account</string>
+    <string name="show_all">Show all</string>
+    <string name="update">Update</string>
 </resources>

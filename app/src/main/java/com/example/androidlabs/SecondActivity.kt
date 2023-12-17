@@ -1,102 +1,105 @@
 package com.example.androidlabs
 
-import ListElement
+import DatabaseHandler
 import ListElementAdapter
+import User
 import android.app.Activity
-import android.content.Context
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
-import android.widget.AdapterView.OnItemClickListener
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ListView
 import android.widget.Toast
-import androidx.core.view.size
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
 
 class SecondActivity : Activity() {
     private val TAG = this.javaClass.simpleName
 
+    private var isUpdate = false
+    private lateinit var oldUser:User
+
+    private lateinit var login: EditText
+    private lateinit var password: EditText
+    private lateinit var btnSave: Button
+    private lateinit var btnLoad: Button
+    private lateinit var rvUsers: RecyclerView
+    private val userAdapter = ListElementAdapter()
+
+
+    private val db = DatabaseHandler(this)
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.i(TAG, Const.LifeCycle.ON_CREATE)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.second_activity)
-        val textListView = findViewById<ListView>(R.id.list)
-        val addButton = findViewById<Button>(R.id.addButton)
-        val delButton = findViewById<Button>(R.id.deleteButton)
-        val textToList = findViewById<EditText>(R.id.textToList)
-        val myStringArray = ArrayList<ListElement>()
-        val textListAdapter: ListElementAdapter<String> =
-            ListElementAdapter(myStringArray, this)
-        val sharedPref: SharedPreferences = getPreferences(Context.MODE_PRIVATE)
-        var number = 0
-        var restoredData = sharedPref.getString(Const.Extra.LIST_DATA + number, "")
-        val editor: SharedPreferences.Editor = sharedPref.edit()
-        editor.remove(Const.Extra.LIST_DATA + number)
-        while (restoredData != "") {
-            textListAdapter.add(ListElement(restoredData,false))
-            number++
-            restoredData = sharedPref.getString(Const.Extra.LIST_DATA + number, "")
-            editor.remove(Const.Extra.LIST_DATA + number).apply()
-        }
-        textListView.adapter = textListAdapter
 
-        addButton.setOnClickListener {
-            if (!textToList.text.isNullOrEmpty()) {
-                textListAdapter.add(ListElement(textToList.text.toString(),false))
-                textToList.text.clear()
+        login = findViewById(R.id.login)
+        password = findViewById(R.id.password)
+        btnSave = findViewById(R.id.addButton)
+        btnLoad = findViewById(R.id.showAllButton)
+
+        btnSave.setOnClickListener {
+            if(isUpdate){
+                val login = login.text.toString()
+                val pass = password.text.toString()
+                val user = User(login = login, pass = pass)
+                db.updateUser(user, oldUser)
+                isUpdate = false
+                this.login.isEnabled = true
             }
-        }
-        delButton.setOnClickListener {
-            var itemsToDel = ArrayList<ListElement>()
-            for(i in 0..textListAdapter.count-1){
-               if(textListAdapter.getItem(i).checked){
-                   itemsToDel.add(textListAdapter.getItem(i))
-               }
+            else {
+            val login = login.text.toString()
+            val pass = password.text.toString()
+            val user = User(login = login, pass = pass)
+            db.addUser(user)
             }
-            itemsToDel.forEach(textListAdapter::remove)
+            login.text.clear()
+            password.text.clear()
         }
-        Toast.makeText(
-            this@SecondActivity,
-            intent.getStringExtra(Const.Extra.SOME_INFO), Toast.LENGTH_SHORT
-        ).show()
+
+        btnLoad.setOnClickListener {
+            val users = db.getAllUsers()
+            val usersLog = users.joinToString(separator = ",\n")
+            Log.d(TAG, "Users:\n $usersLog")
+            userAdapter.setData(users)
+        }
+        userAdapter.setListener(object: UserClickListener {
+            override fun onItemClick(user: User) {
+                Toast.makeText(this@SecondActivity, "onItemClick() user=$user", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onMenuDeleteClick(user: User) {
+                db.deleteUser(user)
+                Toast.makeText(this@SecondActivity, "onMenuDeleteClick() user=$user", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onMenuUpdateClick(user: User) {
+                isUpdate = true
+                oldUser = user
+                login.setText(user.login)
+                login.isEnabled = false
+                password.setText(user.pass)
+                Toast.makeText(this@SecondActivity, "onMenuDeleteClick() user=$user", Toast.LENGTH_SHORT).show()
+            }
+        })
 
 
-    }
+        rvUsers = findViewById(R.id.rv_users)
+        rvUsers.layoutManager = LinearLayoutManager(this)
+        rvUsers.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
+        rvUsers.adapter = userAdapter
 
-    override fun onStart() {
-        Log.i(TAG, Const.LifeCycle.ON_START)
-        super.onStart()
-    }
-
-    override fun onResume() {
-        Log.i(TAG, Const.LifeCycle.ON_RESUME)
-        super.onResume()
     }
 
     override fun onPause() {
-        Log.i(TAG, Const.LifeCycle.ON_PAUSE)
         super.onPause()
-    }
-
-    override fun onStop() {
-        Log.i(TAG, Const.LifeCycle.ON_STOP)
-        val textListView = findViewById<ListView>(R.id.list)
-        val sharedPref: SharedPreferences = getPreferences(Context.MODE_PRIVATE)
-        val editor: SharedPreferences.Editor = sharedPref.edit()
-        if (textListView.size != 0){
-            for(i in 0..textListView.size-1){
-                editor.putString(Const.Extra.LIST_DATA + i,
-                    (textListView.adapter.getItem(i)as ListElement).name
-                ).apply()
-            }
-        }
-        super.onStop()
+        db.deleteAll()
     }
 
     override fun onDestroy() {
-        Log.i(TAG, Const.LifeCycle.ON_DESTROY)
         super.onDestroy()
+        db.deleteAll()
+        db.close()
     }
 }
