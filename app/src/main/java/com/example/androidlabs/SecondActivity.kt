@@ -5,6 +5,9 @@ import ListElementAdapter
 import User
 import android.app.Activity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
@@ -28,7 +31,19 @@ class SecondActivity : Activity() {
     private lateinit var rvUsers: RecyclerView
     private val userAdapter = ListElementAdapter()
 
-
+    private val looper = Looper.getMainLooper()
+    private val message = Message.obtain()
+    private val handler = object: Handler(looper) {
+        override fun handleMessage(msg: Message) {
+            if(msg.sendingUid == 1){
+                val users = ArrayList<User>()
+                (msg.obj as? ArrayList<*>)?.forEach {
+                    users.add(it as User)
+                }
+                rvUsers.post{userAdapter.setData(users)}
+                }
+        }
+    }
     private val db = DatabaseHandler(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,34 +56,26 @@ class SecondActivity : Activity() {
         btnLoad = findViewById(R.id.showAllButton)
 
         btnSave.setOnClickListener {
-            thread {
-                if(isUpdate){
-                    val login = login.text.toString()
-                    val pass = password.text.toString()
-                    val user = User(login = login, pass = pass)
-                    db.updateUser(user, oldUser)
-                    isUpdate = false
-                    this.login.isEnabled = true
-                }
-                else {
-                    val login = login.text.toString()
-                    val pass = password.text.toString()
-                    val user = User(login = login, pass = pass)
-                    db.addUser(user)
-                }
-                login.post{login.text.clear()}
-                password.post{password.text.clear()}
+            if(isUpdate){
+                val login = login.text.toString()
+                val pass = password.text.toString()
+                val user = User(login = login, pass = pass)
+                DBRequestHandler(handler, db).updateUser(user,oldUser)
+                isUpdate = false
+                this.login.isEnabled = true
             }
+            else {
+                val login = login.text.toString()
+                val pass = password.text.toString()
+                val user = User(login = login, pass = pass)
+                DBRequestHandler(handler, db).addUser(user)
+            }
+            login.post{login.text.clear()}
+            password.post{password.text.clear()}
         }
 
         btnLoad.setOnClickListener {
-            thread {
-                val users = db.getAllUsers()
-                Thread.sleep(10000)
-                val usersLog = users.joinToString(separator = ",\n")
-                Log.d(TAG, "Users:\n $usersLog")
-                rvUsers.post{userAdapter.setData(users)}
-            }
+            DBRequestHandler(handler, db).getAllUsers()
         }
         userAdapter.setListener(object: UserClickListener {
             override fun onItemClick(user: User) {
